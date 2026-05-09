@@ -378,12 +378,7 @@ class ProjectController extends Controller
             ->selectRaw('COUNT(projects.id) as total')
             ->groupBy('category')
             ->orderByRaw(
-                "CASE {$categoryExpression}
-                    WHEN 'Estudiante' THEN 1
-                    WHEN 'Docente' THEN 2
-                    WHEN 'Mixto' THEN 3
-                    ELSE 4
-                END"
+                "FIELD(category, 'Estudiante', 'Docente', 'Mixto', 'Sin autores')"
             );
     }
 
