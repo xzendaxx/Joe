@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ProjectIdeaEvaluated;
 use App\Models\Content;
 use App\Models\ContentVersion;
 use App\Models\Professor;
@@ -135,6 +136,13 @@ class ProjectEvaluationController extends Controller
             $validated['comments'] ?? null,
             ['final_status_name' => $statusName]
         );
+
+        // Disparar evento de notificación
+        event(new ProjectIdeaEvaluated(
+            $project->load(['students.user', 'professors.user']),
+            $statusName,
+            $validated['comments'] ?? null
+        ));
 
         return redirect()
             ->route('projects.evaluation.index')
