@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -759,6 +760,8 @@ SQL;
             }
 
             return $this->persistStudentProject($request, $user->student, null, $activeAcademicPeriod, $proposalWindow);
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (\Throwable $exception) {
             Log::error('Failed to register project idea.', [
                 'message' => $exception->getMessage(),
@@ -1166,6 +1169,8 @@ SQL;
             if ($isResearchStaff) {
                 abort(403, 'Pidele al creador del proyecto que lo edite y envie a revision de nuevo.');
             }
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (\Throwable $exception) {
             Log::error('Failed to update project idea.', [
                 'project_id' => $project->id,
@@ -1494,7 +1499,15 @@ SQL;
             'content_frameworks.*' => ['required', Rule::exists('content_frameworks', 'id')],
         ];
 
-        $validated = $request->validate($baseRules);
+        $validated = $request->validate($baseRules, [
+            'investigation_line_id.required' => 'Debes seleccionar una línea de investigación.',
+            'thematic_area_id.required' => 'Debes seleccionar un área temática.',
+            'title.required' => 'El título del proyecto es obligatorio.',
+            'general_objective.required' => 'El objetivo general es obligatorio.',
+            'description.required' => 'La descripción del proyecto es obligatoria.',
+            'content_frameworks.required' => 'Debes completar la selección de marcos.',
+            'content_frameworks.*.required' => 'Debes seleccionar una opción en cada marco.',
+        ]);
         $isUpdate = $project !== null;
 
         if (! empty($validated['teammate_ids'])) {

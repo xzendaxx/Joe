@@ -806,4 +806,45 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+//Funcion que permite desactivar los mensajes de alerta cuando se agrega un dato en la creación de proyectos
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('form[action="{{ route('projects.store') }}"], form[action*="/projects/"]');
+
+    if (!form) {
+        return;
+    }
+
+    const clearFieldValidationState = (field) => {
+        if (!field.classList.contains('is-invalid')) {
+            return;
+        }
+
+        const hasValue = field.type === 'checkbox' || field.type === 'radio'
+            ? field.checked
+            : String(field.value ?? '').trim() !== '';
+
+        if (!hasValue) {
+            return;
+        }
+
+        field.classList.remove('is-invalid');
+
+        const wrapper = field.closest('.col-12, .col-md-6, .col-md-12, .col-lg-6, .col-lg-12') ?? field.parentElement;
+        if (!wrapper) {
+            return;
+        }
+
+        wrapper.querySelectorAll('.invalid-feedback').forEach((feedback) => {
+            feedback.style.display = 'none';
+        });
+    };
+
+    const watchedFields = form.querySelectorAll('input, select, textarea');
+
+    watchedFields.forEach((field) => {
+        const eventName = field.tagName.toLowerCase() === 'select' ? 'change' : 'input';
+        field.addEventListener(eventName, () => clearFieldValidationState(field));
+    });
+});
 </script>
