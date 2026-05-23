@@ -6,6 +6,7 @@ use App\Models\ResearchStaff\ResearchStaffResearchStaff;
 use App\Models\ResearchStaff\ResearchStaffUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PerfilControllerTest extends TestCase
@@ -256,5 +257,50 @@ class PerfilControllerTest extends TestCase
         $showResponse = $this->actingAs($student)->get(route('perfil.show'));
         $showResponse->assertStatus(200);
         $showResponse->assertViewIs('perfil_show');
+    }
+
+    /** @test */
+    public function test_authenticated_user_can_load_their_profile_photo_through_the_application_route()
+    {
+        Storage::fake('public');
+
+        $user = ResearchStaffUser::create([
+            'email' => 'photo@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'research_staff',
+            'state' => 1,
+            'profile_photo_path' => 'profile_photos/carlos.jpg',
+        ]);
+
+        Storage::disk('public')->put('profile_photos/carlos.jpg', 'avatar-content');
+
+        $response = $this->actingAs($user)->get(route('perfil.photo.show', [
+            'path' => 'profile_photos/carlos.jpg',
+        ]));
+
+        $response->assertOk();
+        $response->assertContent('avatar-content');
+    }
+
+    /** @test */
+    public function test_authenticated_user_cannot_request_a_different_profile_photo_path()
+    {
+        Storage::fake('public');
+
+        $user = ResearchStaffUser::create([
+            'email' => 'photo@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'research_staff',
+            'state' => 1,
+            'profile_photo_path' => 'profile_photos/carlos.jpg',
+        ]);
+
+        Storage::disk('public')->put('profile_photos/otra.jpg', 'avatar-content');
+
+        $response = $this->actingAs($user)->get(route('perfil.photo.show', [
+            'path' => 'profile_photos/otra.jpg',
+        ]));
+
+        $response->assertForbidden();
     }
 }

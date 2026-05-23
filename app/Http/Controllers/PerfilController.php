@@ -39,6 +39,24 @@ class PerfilController extends Controller
         ]);
     }
 
+    public function showPhoto(Request $request)
+    {
+        $user = AuthUserHelper::fullUser();
+
+        abort_unless($user instanceof User, 403);
+
+        $requestedPath = ltrim(str_replace('\\', '/', trim((string) $request->query('path'))), '/');
+        $currentPhotoPath = ltrim(str_replace('\\', '/', trim((string) ($user->profile_photo_path ?? ''))), '/');
+
+        abort_if($requestedPath === '' || ! str_starts_with($requestedPath, 'profile_photos/'), 404);
+        abort_unless($currentPhotoPath !== '' && hash_equals($currentPhotoPath, $requestedPath), 403);
+        abort_unless(Storage::disk('public')->exists($requestedPath), 404);
+
+        return Storage::disk('public')->response($requestedPath, basename($requestedPath), [
+            'Cache-Control' => 'private, max-age=300',
+        ]);
+    }
+
     public function edit()
     {
         $user = AuthUserHelper::fullUser();

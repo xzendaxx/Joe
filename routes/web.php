@@ -123,6 +123,7 @@ Route::middleware(['auth', 'role:research_staff'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     // Perfil (vista de solo lectura para cualquier usuario autenticado)
     Route::get('/perfil', [PerfilController::class, 'show'])->name('perfil.show');
+    Route::get('/perfil/foto', [PerfilController::class, 'showPhoto'])->name('perfil.photo.show');
     Route::get('/perfil/editar', [PerfilController::class, 'edit'])->name('perfil.edit');
     Route::put('/perfil', [PerfilController::class, 'update'])->name('perfil.update');
     Route::put('/perfil/foto', [PerfilController::class, 'updatePhoto'])->name('perfil.photo.update');

@@ -11,12 +11,12 @@ class HomeViewTest extends TestCase
     {
         $html = view('home', [
             'displayName' => 'Carlos Montoya',
-            'profilePhotoUrl' => '/storage/profile_photos/carlos.webp',
+            'profilePhotoUrl' => '/perfil/foto?path=profile_photos%2Fcarlos.webp',
             'userTypeLabel' => 'Personal de investigacion',
             'userRole' => 'research_staff',
         ])->render();
 
-        $this->assertStringContainsString('/storage/profile_photos/carlos.webp', $html);
+        $this->assertStringContainsString('/perfil/foto?path=profile_photos%2Fcarlos.webp', $html);
         $this->assertStringContainsString('abi-home-avatar__image', $html);
     }
 

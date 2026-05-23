@@ -4,6 +4,7 @@ namespace Tests\Unit\Views;
 
 use App\Models\ResearchStaff;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ViewErrorBag;
 use Tests\TestCase;
 
@@ -42,6 +43,8 @@ class PerfilViewTest extends TestCase
     public function profile_view_renders_uploaded_photo_when_available(): void
     {
         view()->share('errors', new ViewErrorBag());
+        Storage::fake('public');
+        Storage::disk('public')->put('profile_photos/carlos.webp', 'avatar');
 
         $html = view('perfil_show', [
             'user' => new User([
@@ -63,7 +66,7 @@ class PerfilViewTest extends TestCase
             'canChangePassword' => true,
         ])->render();
 
-        $this->assertStringContainsString('profile_photos/carlos.webp', $html);
+        $this->assertStringContainsString('/perfil/foto?path=profile_photos%2Fcarlos.webp', $html);
         $this->assertStringContainsString('abi-profile-avatar__image', $html);
     }
 
@@ -98,6 +101,8 @@ class PerfilViewTest extends TestCase
     public function profile_view_shows_current_profile_photo_update_entry_point(): void
     {
         view()->share('errors', new ViewErrorBag());
+        Storage::fake('public');
+        Storage::disk('public')->put('profile_photos/carlos.png', 'avatar');
 
         $html = view('perfil_show', [
             'user' => new User([
@@ -119,7 +124,7 @@ class PerfilViewTest extends TestCase
             'canChangePassword' => true,
         ])->render();
 
-        $this->assertStringContainsString('profile_photos/carlos.png', $html);
+        $this->assertStringContainsString('/perfil/foto?path=profile_photos%2Fcarlos.png', $html);
         $this->assertStringContainsString('type="file"', $html);
         $this->assertStringContainsString('Subir nueva imagen', $html);
     }
