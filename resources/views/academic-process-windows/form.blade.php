@@ -64,6 +64,25 @@
     @enderror
 </div>
 
+<div class="row g-3 mt-1">
+    <div class="col-12 col-md-6">
+        <label class="form-check form-switch">
+            <input type="hidden" name="is_enabled" value="0">
+            <input class="form-check-input" type="checkbox" name="is_enabled" value="1" {{ old('is_enabled', $window->is_enabled ?? true) ? 'checked' : '' }}>
+            <span class="form-check-label">Habilitada</span>
+        </label>
+        <small class="form-hint text-muted">Si la ventana está activa para los usuarios.</small>
+    </div>
+    <div class="col-12 col-md-6">
+        <label class="form-check form-switch">
+            <input type="hidden" name="requires_evaluation" value="0">
+            <input class="form-check-input" type="checkbox" name="requires_evaluation" value="1" {{ old('requires_evaluation', $window->requires_evaluation ?? false) ? 'checked' : '' }}>
+            <span class="form-check-label">Requiere evaluación (Postulación)</span>
+        </label>
+        <small class="form-hint text-muted">Si se activa, el estudiante debe postularse y esperar aprobación. Si se desactiva, la asignación es directa.</small>
+    </div>
+</div>
+
 <hr class="my-4">
 
 <div class="form-footer d-flex justify-content-end gap-2">
