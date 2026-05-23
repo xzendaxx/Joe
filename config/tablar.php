@@ -234,14 +234,9 @@ return [
         'hasRole' => 'research_staff',
         'submenu' => [
             [
-                'text' => 'Departamentos',
-                'icon' => 'ti ti-building',
-                'route' => 'departments.index',
-            ],
-            [
-                'text' => 'Ciudades',
-                'icon' => 'ti ti-map-pin',
-                'route' => 'cities.index',
+                'text' => 'Departamentos y Ciudades',
+                'icon' => 'ti ti-map-2',
+                'route' => 'departments-cities.index',
             ],
             [
                 'text' => 'Asignación Ciudad y Programa',

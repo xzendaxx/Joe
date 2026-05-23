@@ -281,7 +281,6 @@
 
             avatarInput?.addEventListener('change', () => {
                 if (avatarInput.files?.length) {
-                    window.__abiAutoLogout?.markInternalNavigation?.();
                     avatarInput.form?.submit();
                 }
             });

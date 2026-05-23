@@ -61,8 +61,7 @@ Route::middleware(['auth', 'role:research_staff'])->group(function () {
 
     // Profile (edición solo personal de investigaciones)
     
-    //  Added routes for Departments and Cities (new addition)
-    // These were added to manage departments and their related cities
+    Route::get('departments-cities', [DepartmentController::class, 'unifiedIndex'])->name('departments-cities.index');
     Route::resource('departments', DepartmentController::class);
     Route::resource('cities', CityController::class);
     Route::resource('city-program', CityProgramController::class);
