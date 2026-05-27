@@ -35,7 +35,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProjectController extends Controller
 {
@@ -54,7 +53,7 @@ class ProjectController extends Controller
     /**
      * Display a paginated list of projects for the authenticated user.
      */
-    public function index(Request $request): View|StreamedResponse|Response
+    public function index(Request $request): View|Response
     {
         $user = AuthUserHelper::fullUser();
 
@@ -115,14 +114,6 @@ class ProjectController extends Controller
 
         if ($user?->role === 'research_staff') {
             $reportState = $this->buildProjectReportState($request, $user);
-
-            if ($reportState['export'] === 'csv') {
-                return $this->streamProjectReportCsv(
-                    $reportState['reportKey'],
-                    $reportState['exportLabel'],
-                    $reportState['reportData']
-                );
-            }
 
             if ($reportState['export'] === 'pdf') {
                 return $this->downloadProjectReportPdf($reportState);
@@ -203,7 +194,7 @@ class ProjectController extends Controller
             'report_from' => ['nullable', 'date'],
             'report_to' => ['nullable', 'date', 'after_or_equal:report_from'],
             'report_program_id' => ['nullable', 'integer', 'exists:programs,id'],
-            'report_export' => ['nullable', Rule::in(['csv', 'pdf'])],
+            'report_export' => ['nullable', Rule::in(['pdf'])],
         ]);
 
         $reportKey = $filters['report_key'] ?? 'projects_by_status';
@@ -1582,42 +1573,6 @@ SQL;
         }
 
         return $segments;
-    }
-
-    /**
-     * @param  array{categories: array<int, string>, values: array<int, int>, percentages: array<int, float>, total: int}  $reportData
-     */
-    protected function streamProjectReportCsv(string $reportKey, string $reportLabel, array $reportData): StreamedResponse
-    {
-        $filename = sprintf(
-            'reporte-%s-%s.csv',
-            str_replace('_', '-', $reportKey),
-            now()->format('Ymd-His')
-        );
-
-        return response()->streamDownload(function () use ($reportLabel, $reportData): void {
-            $handle = fopen('php://output', 'wb');
-
-            if ($handle === false) {
-                return;
-            }
-
-            fputcsv($handle, [$reportLabel]);
-            fputcsv($handle, ['Categoria', 'Valor', 'Porcentaje']);
-
-            foreach ($reportData['categories'] as $index => $category) {
-                fputcsv($handle, [
-                    $category,
-                    $reportData['values'][$index] ?? 0,
-                    $reportData['percentages'][$index] ?? 0,
-                ]);
-            }
-
-            fputcsv($handle, ['Total', $reportData['total'], 100]);
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
     }
 
     /**

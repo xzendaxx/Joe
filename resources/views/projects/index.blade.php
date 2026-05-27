@@ -369,11 +369,6 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title">Buscar proyectos</h3>
-                    @if ($isResearchStaff)
-                        <a href="{{ route('projects.index', array_merge(request()->except('page'), ['pending_review_due_to_age' => 1])) }}" class="btn btn-outline-warning btn-sm">
-                            Ver pendientes por antiguedad
-                        </a>
-                    @endif
                 </div>
                 <div class="card-body">
                     <form method="GET" class="row g-3 align-items-end">
@@ -420,15 +415,6 @@
                                 @endforeach
                             </select>
                         </div>
-                        @if ($isResearchStaff)
-                            <div class="col-12 col-md-6 col-lg-4">
-                                <label class="form-label d-block">Alertas de revision</label>
-                                <label class="form-check mb-0">
-                                    <input type="checkbox" class="form-check-input" name="pending_review_due_to_age" value="1" {{ $pendingReviewDueToAge ? 'checked' : '' }}>
-                                    <span class="form-check-label">Mostrar solo pendientes de revision por antiguedad</span>
-                                </label>
-                            </div>
-                        @endif
                         <div class="col-12 col-md-4 col-lg-2">
                             <button type="submit" class="btn btn-primary w-100">Aplicar filtros</button>
                         </div>
@@ -541,7 +527,6 @@
                             <input type="hidden" name="search" value="{{ $search }}">
                             <input type="hidden" name="status_id" value="{{ $selectedStatus }}">
                             <input type="hidden" name="city_program_id" value="{{ $selectedCityProgram }}">
-                            <input type="hidden" name="pending_review_due_to_age" value="{{ $pendingReviewDueToAge ? 1 : '' }}">
                             <div class="col-12 col-md-6 col-lg-4">
                                 <label for="report_key" class="form-label">Que deseas comparar</label>
                                 <select id="report_key" name="report_key" class="form-select">
@@ -592,23 +577,6 @@
                                             'search' => $search,
                                             'status_id' => $selectedStatus,
                                             'city_program_id' => $selectedCityProgram,
-                                            'pending_review_due_to_age' => $pendingReviewDueToAge ? 1 : null,
-                                            'report_key' => $activeReportKey,
-                                            'report_from' => $reportFilters['report_from'],
-                                            'report_to' => $reportFilters['report_to'],
-                                            'report_program_id' => $reportFilters['report_program_id'],
-                                            'report_export' => 'csv',
-                                        ], static fn ($value) => $value !== null && $value !== '')) }}"
-                                        class="btn btn-outline-primary"
-                                    >
-                                        Exportar CSV
-                                    </a>
-                                    <a
-                                        href="{{ route('projects.index', array_filter([
-                                            'search' => $search,
-                                            'status_id' => $selectedStatus,
-                                            'city_program_id' => $selectedCityProgram,
-                                            'pending_review_due_to_age' => $pendingReviewDueToAge ? 1 : null,
                                             'report_key' => $activeReportKey,
                                             'report_from' => $reportFilters['report_from'],
                                             'report_to' => $reportFilters['report_to'],
