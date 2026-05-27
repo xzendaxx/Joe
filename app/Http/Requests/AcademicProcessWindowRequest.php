@@ -16,9 +16,15 @@ class AcademicProcessWindowRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $processKey = $this->input('process_key');
+        $requiresEvaluation = $processKey === AcademicProcessWindow::PROCESS_IDEA_SELECTION
+            ? $this->boolean('requires_evaluation')
+            : false;
+
         $this->merge([
             'name' => trim((string) $this->input('name')),
             'notes' => trim((string) $this->input('notes')),
+            'requires_evaluation' => $requiresEvaluation,
         ]);
     }
 

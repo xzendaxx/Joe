@@ -1,4 +1,9 @@
-@php $isEdit = isset($window) && $window->exists; @endphp
+@php
+    $isEdit = isset($window) && $window->exists;
+    $ideaSelectionProcess = \App\Models\AcademicProcessWindow::PROCESS_IDEA_SELECTION;
+    $selectedProcess = old('process_key', $window->process_key ?? '');
+    $showRequiresEvaluation = $selectedProcess === $ideaSelectionProcess;
+@endphp
 
 <div class="row g-3">
     <div class="col-12 col-md-6">
@@ -73,10 +78,23 @@
         </label>
         <small class="form-hint text-muted">Si la ventana está activa para los usuarios.</small>
     </div>
-    <div class="col-12 col-md-6">
+
+    <input type="hidden" name="requires_evaluation" value="0">
+    <div
+        id="requires-evaluation-group"
+        class="col-12 col-md-6 {{ $showRequiresEvaluation ? '' : 'd-none' }}"
+        data-idea-selection-process="{{ $ideaSelectionProcess }}"
+    >
         <label class="form-check form-switch">
-            <input type="hidden" name="requires_evaluation" value="0">
-            <input class="form-check-input" type="checkbox" name="requires_evaluation" value="1" {{ old('requires_evaluation', $window->requires_evaluation ?? false) ? 'checked' : '' }}>
+            <input
+                id="requires_evaluation"
+                class="form-check-input"
+                type="checkbox"
+                name="requires_evaluation"
+                value="1"
+                {{ old('requires_evaluation', $window->requires_evaluation ?? false) ? 'checked' : '' }}
+                {{ $showRequiresEvaluation ? '' : 'disabled' }}
+            >
             <span class="form-check-label">Requiere evaluación (Postulación)</span>
         </label>
         <small class="form-hint text-muted">Si se activa, el estudiante debe postularse y esperar aprobación. Si se desactiva, la asignación es directa.</small>
@@ -89,3 +107,30 @@
     <a href="{{ route('academic-process-windows.index') }}" class="btn btn-link">Cancelar</a>
     <button type="submit" class="btn btn-primary">{{ $isEdit ? 'Actualizar ventana' : 'Crear ventana' }}</button>
 </div>
+
+@push('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const processSelect = document.getElementById('process_key');
+    const requiresEvaluationGroup = document.getElementById('requires-evaluation-group');
+    const requiresEvaluationCheckbox = document.getElementById('requires_evaluation');
+
+    if (!processSelect || !requiresEvaluationGroup || !requiresEvaluationCheckbox) {
+        return;
+    }
+
+    const ideaSelectionProcess = requiresEvaluationGroup.dataset.ideaSelectionProcess;
+
+    const syncRequiresEvaluationVisibility = () => {
+        const shouldShow = processSelect.value === ideaSelectionProcess;
+
+        requiresEvaluationGroup.classList.toggle('d-none', !shouldShow);
+        requiresEvaluationCheckbox.disabled = !shouldShow;
+    };
+
+    processSelect.addEventListener('change', syncRequiresEvaluationVisibility);
+
+    syncRequiresEvaluationVisibility();
+});
+</script>
+@endpush
