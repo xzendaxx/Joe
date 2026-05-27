@@ -15,18 +15,14 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class ProjectEvaluationController extends Controller
 {
     public function index(Request $request): View|Response
     {
-        $professor = Professor::where('user_id', Auth::id())->where('committee_leader', true)->whereNull('deleted_at')->first();
-
-        if (! $professor || ! $professor->city_program_id) {
-            abort(403, 'No se pudo determinar el programa del líder de comité.');
-        }
-
-        $cityProgramId = $professor->city_program_id;
+        $committeeLeader = $this->resolveCommitteeLeader();
+        $cityProgramId = $committeeLeader->city_program_id;
 
         $projects = Project::whereHas('projectStatus', function ($query) {
                 $query->whereIn('name', ['Pendiente de aprobacion']);
@@ -57,6 +53,8 @@ class ProjectEvaluationController extends Controller
 
     public function show(Project $project)
     {
+        $committeeLeader = $this->resolveCommitteeLeader();
+        $this->ensureProjectBelongsToCommitteeProgram($project, $committeeLeader->city_program_id);
         $project->load([
             'thematicArea.investigationLine',
             'projectStatus',
@@ -82,6 +80,8 @@ class ProjectEvaluationController extends Controller
 
     public function evaluate(Request $request, Project $project)
     {
+        $committeeLeader = $this->resolveCommitteeLeader();
+        $this->ensureProjectBelongsToCommitteeProgram($project, $committeeLeader->city_program_id);
         $validated = $request->validate([
             'status' => 'required|string|in:Aprobado,Rechazado,Devuelto para correccion',
             'comments' => 'nullable|string',
@@ -92,15 +92,16 @@ class ProjectEvaluationController extends Controller
         $isStudentProject = ! $isProfessorProject;
 
         // Si es proyecto de estudiante y se aprueba, normalmente se asigna.
-        // Pero si estamos en modo postulación (Phase 2), tal vez queramos que siga otro flujo?
+        // Si estamos en una fase distinta, este comportamiento se puede ajustar.
         // Sin embargo, si el estudiante propuso la idea, ya es suya.
         if ($statusName === 'Aprobado' && $isStudentProject) {
             $statusName = 'Asignado';
         }
 
-        $status = ProjectStatus::whereIn('name', array_unique([$statusName, str_replace(['ó', 'é'], ['o', 'e'], $statusName)]))->first();
+        $normalizedStatusName = Str::of($statusName)->ascii()->toString();
+        $status = ProjectStatus::whereIn('name', array_unique([$statusName, $normalizedStatusName]))->first();
         if (! $status) {
-            return back()->with('error', "No se encontró el estado '$statusName'.");
+            return back()->with('error', "No se encontro el estado '$statusName'.");
         }
 
         $project->update(['project_status_id' => $status->id]);
@@ -120,10 +121,11 @@ class ProjectEvaluationController extends Controller
         }
 
         $activePeriod = \App\Models\AcademicPeriod::query()->active()->first() ?? $project->proposalAcademicPeriod;
-        $stage = match (Str::lower($validated['status'])) {
+        $normalizedRequestedStatus = Str::of($validated['status'])->ascii()->lower()->toString();
+        $stage = match ($normalizedRequestedStatus) {
             'aprobado' => 'approved',
             'rechazado' => 'rejected',
-            'devuelto para corrección', 'devuelto para correccion' => 'returned_for_correction',
+            'devuelto para correccion' => 'returned_for_correction',
             default => 'evaluated',
         };
 
@@ -136,7 +138,7 @@ class ProjectEvaluationController extends Controller
             ['final_status_name' => $statusName]
         );
 
-        // Disparar evento de notificación
+        // Disparar evento de notificacion
         event(new ProjectIdeaEvaluated(
             $project->load(['students.user', 'professors.user']),
             $statusName,
@@ -350,7 +352,9 @@ class ProjectEvaluationController extends Controller
             ->whereKey($project->getKey())
             ->exists();
 
-        return redirect()->route('projects.evaluation.index')->with('success', "Evaluación del proyecto '{$project->title}' enviada correctamente con estado: $statusName.");
+        if (! $belongsToProgram) {
+            abort(403, 'No tienes permiso para ver este proyecto.');
+        }
     }
 
     /**
