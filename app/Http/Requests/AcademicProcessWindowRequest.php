@@ -41,6 +41,8 @@ class AcademicProcessWindowRequest extends FormRequest
             'start_at' => ['required', 'date'],
             'end_at' => ['required', 'date', 'after:start_at'],
             'notes' => ['nullable', 'string'],
+            'is_enabled' => ['required', 'boolean'],
+            'requires_evaluation' => ['required', 'boolean'],
         ];
     }
 

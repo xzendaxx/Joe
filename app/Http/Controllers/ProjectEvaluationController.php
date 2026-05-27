@@ -15,28 +15,30 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 
 class ProjectEvaluationController extends Controller
 {
     public function index(Request $request): View|Response
     {
-        $committeeLeader = $this->resolveCommitteeLeader();
-        $cityProgramId = (int) $committeeLeader->city_program_id;
+        $professor = Professor::where('user_id', Auth::id())->where('committee_leader', true)->whereNull('deleted_at')->first();
 
-        $projects = $this->programProjectsQuery($cityProgramId)
-            ->whereHas('projectStatus', function (Builder $query): void {
-                $query->where('name', 'Pendiente de aprobacion');
+        if (! $professor || ! $professor->city_program_id) {
+            abort(403, 'No se pudo determinar el programa del líder de comité.');
+        }
+
+        $cityProgramId = $professor->city_program_id;
+
+        $projects = Project::whereHas('projectStatus', function ($query) {
+                $query->whereIn('name', ['Pendiente de aprobacion']);
             })
-            ->with([
-                'projectStatus',
-                'thematicArea.investigationLine',
-                'versions.contentVersions.content',
-                'contentFrameworkProjects.contentFramework.framework',
-                'students',
-                'professors',
-            ])
-            ->orderByDesc('created_at')
+            ->where(function ($query) use ($cityProgramId) {
+                $query->whereHas('students', function ($sub) use ($cityProgramId) {
+                    $sub->where('city_program_id', $cityProgramId);
+                })->orWhereHas('professors', function ($sub) use ($cityProgramId) {
+                    $sub->where('city_program_id', $cityProgramId);
+                });
+            })
+            ->with(['projectStatus', 'thematicArea.investigationLine', 'versions.contentVersions.content', 'contentFrameworkProjects.contentFramework.framework', 'students', 'professors'])
             ->get();
 
         $committeeLeader->loadMissing('cityProgram.program', 'cityProgram.city');
@@ -55,9 +57,6 @@ class ProjectEvaluationController extends Controller
 
     public function show(Project $project)
     {
-        $committeeLeader = $this->resolveCommitteeLeader();
-        $this->ensureProjectBelongsToCommitteeProgram($project, (int) $committeeLeader->city_program_id);
-
         $project->load([
             'thematicArea.investigationLine',
             'projectStatus',
@@ -83,30 +82,30 @@ class ProjectEvaluationController extends Controller
 
     public function evaluate(Request $request, Project $project)
     {
-        $committeeLeader = $this->resolveCommitteeLeader();
-        $this->ensureProjectBelongsToCommitteeProgram($project, (int) $committeeLeader->city_program_id);
-
         $validated = $request->validate([
-            'status' => 'required|string|in:Aprobado,Rechazado,Devuelto para correccion,Devuelto para corrección',
+            'status' => 'required|string|in:Aprobado,Rechazado,Devuelto para correccion',
             'comments' => 'nullable|string',
         ]);
 
-        $requestedStatus = Str::of($validated['status'])->ascii()->squish()->toString();
-        $statusName = $requestedStatus;
+        $statusName = $validated['status'];
         $isProfessorProject = $project->professors()->exists();
         $isStudentProject = ! $isProfessorProject;
+
+        // Si es proyecto de estudiante y se aprueba, normalmente se asigna.
+        // Pero si estamos en modo postulación (Phase 2), tal vez queramos que siga otro flujo?
+        // Sin embargo, si el estudiante propuso la idea, ya es suya.
         if ($statusName === 'Aprobado' && $isStudentProject) {
             $statusName = 'Asignado';
         }
 
-        $status = ProjectStatus::whereIn('name', array_unique([$statusName, Str::of($statusName)->ascii()->toString()]))->first();
+        $status = ProjectStatus::whereIn('name', array_unique([$statusName, str_replace(['ó', 'é'], ['o', 'e'], $statusName)]))->first();
         if (! $status) {
-            return back()->with('error', "No se encontro el estado '$statusName'.");
+            return back()->with('error', "No se encontró el estado '$statusName'.");
         }
 
         $project->update(['project_status_id' => $status->id]);
 
-        if ($requestedStatus === 'Devuelto para correccion') {
+        if (in_array($validated['status'], ['Devuelto para correccion'], true)) {
             $latestVersion = $project->versions()->latest('created_at')->first();
             if ($latestVersion) {
                 $commentContent = Content::where('name', 'Comentarios')->whereJsonContains('roles', 'committee_leader')->first();
@@ -121,10 +120,10 @@ class ProjectEvaluationController extends Controller
         }
 
         $activePeriod = \App\Models\AcademicPeriod::query()->active()->first() ?? $project->proposalAcademicPeriod;
-        $stage = match (Str::lower($requestedStatus)) {
+        $stage = match (Str::lower($validated['status'])) {
             'aprobado' => 'approved',
             'rechazado' => 'rejected',
-            'devuelto para correccion' => 'returned_for_correction',
+            'devuelto para corrección', 'devuelto para correccion' => 'returned_for_correction',
             default => 'evaluated',
         };
 
@@ -351,9 +350,7 @@ class ProjectEvaluationController extends Controller
             ->whereKey($project->getKey())
             ->exists();
 
-        if (! $belongsToProgram) {
-            abort(403, 'Este proyecto no pertenece al programa del lider de comite autenticado.');
-        }
+        return redirect()->route('projects.evaluation.index')->with('success', "Evaluación del proyecto '{$project->title}' enviada correctamente con estado: $statusName.");
     }
 
     /**

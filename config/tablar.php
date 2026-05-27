@@ -1,5 +1,6 @@
 <?php
 use App\Models\AcademicProcessWindow;
+use Illuminate\Support\Facades\Auth;
 
 return [
 
@@ -209,11 +210,23 @@ return [
         'hasRole' => 'committee_leader',
     ],
     [
-    'text' => 'Banco de Ideas Aprobadas',
-    'icon' => 'ti ti-bulb',
-    'route' => 'students.projects.approved.index',
-    'hasRole' => 'student',
-],
+        'text' => 'Evaluar Postulaciones',
+        'icon' => 'ti ti-clipboard-check',
+        'route' => 'projects.evaluation.postulations.index',
+        'hasRole' => 'committee_leader',
+    ],
+    [
+        'text' => 'Banco de Ideas Aprobadas',
+        'icon' => 'ti ti-bulb',
+        'route' => 'students.projects.approved.index',
+        'hasRole' => 'student',
+    ],
+    [
+        'text' => 'Mis Postulaciones',
+        'icon' => 'ti ti-file-text',
+        'route' => 'students.postulations.index',
+        'hasRole' => 'student',
+    ],
 
     // =================================================================
     // SECCIÓN: GESTIÓN ACADÉMICA (Research Staff)
