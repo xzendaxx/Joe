@@ -240,7 +240,7 @@
                             <label for="search" class="form-label">Buscar</label>
                             <div class="input-group">
                                 {{-- Input element used to capture the 'search' value. --}}
-                                <input type="text" name="search" id="search" value="{{ $search ?? '' }}" class="form-control" placeholder="Email, nombre, cédula">
+                                <input type="text" name="search" id="search" value="{{ $search ?? '' }}" class="form-control" placeholder="Correo electrónico, nombre, cédula">
                                 @if(!empty($search) || !empty($role) || !empty($state) || !empty($cityProgramId) || ($perPage ?? 10) != 10)
                                     <a href="{{ route('users.index') }}" class="input-group-text" title="Limpiar filtros">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -335,7 +335,7 @@
                         <thead>
                             <tr>
                                 <th class="w-1">#</th>
-                                <th><span class="users-table__truncate" title="Email">Email</span></th>
+                                <th><span class="users-table__truncate" title="Correo electrónico">Correo electrónico</span></th>
                                 <th><span class="users-table__truncate" title="Rol">Rol</span></th>
                                 <th><span class="users-table__truncate" title="Estado">Estado</span></th>
                                 <th><span class="users-table__truncate" title="Nombre">Nombre</span></th>
@@ -351,7 +351,7 @@
                                 <td class="text-muted" data-label="#">
                                     <span class="users-table__value">{{ $users->firstItem() + $index }}</span>
                                 </td>
-                                <td data-label="Email">
+                                <td data-label="Correo electrónico">
                                     <span class="users-table__value users-table__truncate" title="{{ $user->email }}">{{ $user->email }}</span>
                                 </td>
                                 <td data-label="Rol">

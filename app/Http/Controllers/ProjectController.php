@@ -1685,7 +1685,7 @@ SQL;
         $isCommitteeLeader = $user?->role === 'committee_leader';
 
         if (! $isProfessor && ! $isStudent && ! ($allowResearchStaff && $isResearchStaff)) {
-            abort(403, 'This action is only available for professors, committee leaders or students.');
+            abort(403, 'Esta acción solo está disponible para docentes, líderes de comité o estudiantes.');
         }
 
         return [$user, $isProfessor, $isStudent, $isResearchStaff, $isCommitteeLeader];
@@ -1700,7 +1700,7 @@ SQL;
         $activeProfessor = $this->resolveProfessorProfile($user);
 
         if ($isResearchStaff) {
-            abort(403, 'Research staff members cannot create project ideas.');
+            abort(403, 'El personal de investigación no puede crear ideas de proyecto.');
         }
 
         if (! AcademicCalendarService::isProcessWindowOpen(AcademicProcessWindow::PROCESS_IDEA_PROPOSAL)) {
@@ -1759,7 +1759,7 @@ SQL;
         if ($isProfessor) {
             $professor = $activeProfessor;
             if (! $professor) {
-                abort(403, 'Professor profile required to submit proposals.');
+                abort(403, 'Se requiere un perfil docente para enviar propuestas.');
             }
 
             $prefill = array_merge($prefill, [
@@ -1779,7 +1779,7 @@ SQL;
         } else {
             $student = $user->student;
             if (! $student) {
-                abort(403, 'Student profile required to submit proposals.');
+                abort(403, 'Se requiere un perfil de estudiante para enviar propuestas.');
             }
 
             $cityProgram = $student->cityProgram;
@@ -1839,7 +1839,7 @@ SQL;
 
         try {
             if ($isResearchStaff) {
-                abort(403, 'Research staff members cannot create project ideas.');
+                abort(403, 'El personal de investigación no puede crear ideas de proyecto.');
             }
 
             if (! AcademicCalendarService::isProcessWindowOpen(AcademicProcessWindow::PROCESS_IDEA_PROPOSAL)) {
@@ -1884,7 +1884,7 @@ SQL;
                 ->withInput()
                 ->with('error', app()->environment('local')
                     ? $exception->getMessage()
-                    : 'Unexpected error. Please try again later.');
+                    : 'Ocurrió un error inesperado. Inténtalo de nuevo más tarde.');
         }
     }
 
@@ -1948,7 +1948,7 @@ SQL;
         [$user, $isProfessor] = $this->ensureRoleAccess();
 
         if (! $isProfessor) {
-            abort(403, 'Only professors and committee leaders can browse participants.');
+            abort(403, 'Solo los docentes y líderes de comité pueden consultar participantes.');
         }
 
         $requestedIds = collect($request->input('ids', []))
@@ -2087,7 +2087,7 @@ SQL;
         $statusName = $this->normalizeStatusName($project->projectStatus->name ?? '');
 
         if ($statusName === 'pendiente de aprobacion') {
-            abort(403, 'Projects pending approval cannot be edited.');
+            abort(403, 'Los proyectos pendientes de aprobación no se pueden editar.');
         }
 
         if (! $this->isReturnedForCorrection($project)) {
@@ -2156,7 +2156,7 @@ SQL;
         if ($useProfessorForm) {
             $contextProfessor = $isProfessor ? $activeProfessor : $project->professors->first();
             if (! $contextProfessor) {
-                abort(403, 'Professor profile required to edit proposals.');
+                abort(403, 'Se requiere un perfil docente para editar propuestas.');
             }
 
             $prefill = array_merge($prefill, [
@@ -2184,7 +2184,7 @@ SQL;
         } elseif ($useStudentForm) {
             $contextStudent = $isStudent ? $user->student : $project->students->first();
             if (! $contextStudent) {
-                abort(403, 'Student profile required to edit proposals.');
+                abort(403, 'Se requiere un perfil de estudiante para editar propuestas.');
             }
 
             $cityProgram = $contextStudent->cityProgram;
@@ -2221,7 +2221,7 @@ SQL;
                 ->orderBy('name')
                 ->get();
         } else {
-            abort(403, 'Project participants are required to edit this proposal.');
+            abort(403, 'Se requiere ser participante del proyecto para editar esta propuesta.');
         }
 
         return view('projects.edit', [
@@ -2255,7 +2255,7 @@ SQL;
         $statusName = $this->normalizeStatusName($project->projectStatus->name ?? '');
 
         if ($statusName === 'pendiente de aprobacion') {
-            abort(403, 'Projects pending approval cannot be edited.');
+            abort(403, 'Los proyectos pendientes de aprobación no se pueden editar.');
         }
 
         if (! $this->isReturnedForCorrection($project)) {
@@ -2292,7 +2292,7 @@ SQL;
                 ->withInput()
                 ->with('error', app()->environment('local')
                     ? $exception->getMessage()
-                    : 'Unexpected error. Please try again later.');
+                    : 'Ocurrió un error inesperado. Inténtalo de nuevo más tarde.');
         }
     }
 
@@ -2310,17 +2310,17 @@ SQL;
             $professor = $this->resolveProfessorProfile($user);
 
             if (! $professor || ! $project->professors->contains('id', $professor->id)) {
-                abort(403, 'You are not assigned to this project.');
+                abort(403, 'No estás asignado a este proyecto.');
             }
         } elseif ($isStudent) {
             $user = AuthUserHelper::fullUser();
             $student = $user->student;
 
             if (! $student || ! $project->students->contains('id', $student->id)) {
-                abort(403, 'You are not assigned to this project.');
+                abort(403, 'No estás asignado a este proyecto.');
             }
         } else {
-            abort(403, 'Unauthorized access.');
+            abort(403, 'Acceso no autorizado.');
         }
     }
 
@@ -2370,7 +2370,7 @@ SQL;
             ->first();
 
         if (! $status) {
-            throw new \RuntimeException('Waiting evaluation status is missing from the catalog.');
+            throw new \RuntimeException('El estado de pendiente de evaluación no existe en el catálogo.');
         }
 
         $this->waitingStatusId = $status->id;
@@ -2409,13 +2409,13 @@ SQL;
     ): RedirectResponse
     {
         if (! $professor) {
-            abort(403, 'Professor profile required to complete this action.');
+            abort(403, 'Se requiere un perfil docente para completar esta acción.');
         }
 
         $assignedProgramId = optional($professor->cityProgram)->program_id;
 
         if (! $assignedProgramId) {
-            abort(403, 'A program assignment is required before submitting projects.');
+            abort(403, 'Debes tener un programa asignado antes de enviar proyectos.');
         }
 
         $request->merge(['program_id' => $assignedProgramId]);
@@ -2475,7 +2475,7 @@ SQL;
         if ($duplicateProject) {
             return back()
                 ->withInput()
-                ->with('error', 'A project with the same title and professor team already exists.');
+                ->with('error', 'Ya existe un proyecto con el mismo título y el mismo equipo de docentes.');
         }
 
         $activeAcademicPeriod ??= AcademicCalendarService::currentActivePeriodOrFail();
@@ -2545,8 +2545,8 @@ SQL;
         }
 
         $message = $isUpdate
-            ? 'Project idea updated and set to waiting evaluation'
-            : 'Project idea registered and set to waiting evaluation';
+            ? 'La idea de proyecto fue actualizada y quedó pendiente de evaluación.'
+            : 'La idea de proyecto fue registrada y quedó pendiente de evaluación.';
 
         return redirect()
             ->route('projects.index')
@@ -2565,7 +2565,7 @@ SQL;
     ): RedirectResponse
     {
         if (! $student) {
-            abort(403, 'Student profile required to complete this action.');
+            abort(403, 'Se requiere un perfil de estudiante para completar esta acción.');
         }
 
         $baseRules = [
@@ -2735,8 +2735,8 @@ SQL;
         }
 
         $message = $isUpdate
-            ? 'Project idea updated and set to waiting evaluation'
-            : 'Project idea registered and set to waiting evaluation';
+            ? 'La idea de proyecto fue actualizada y quedó pendiente de evaluación.'
+            : 'La idea de proyecto fue registrada y quedó pendiente de evaluación.';
 
         return redirect()
             ->route('projects.index')
