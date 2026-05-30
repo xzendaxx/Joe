@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProjectController extends Controller
@@ -1872,6 +1873,8 @@ SQL;
             }
 
             return $this->persistStudentProject($request, $user->student, null, $activeAcademicPeriod, $proposalWindow);
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (\Throwable $exception) {
             Log::error('Failed to register project idea.', [
                 'message' => $exception->getMessage(),
@@ -2279,6 +2282,8 @@ SQL;
             if ($isResearchStaff) {
                 abort(403, 'Pidele al creador del proyecto que lo edite y envie a revision de nuevo.');
             }
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (\Throwable $exception) {
             Log::error('Failed to update project idea.', [
                 'project_id' => $project->id,
@@ -2330,6 +2335,67 @@ SQL;
     protected function normalizeTitle(string $title): string
     {
         return Str::of($title)->squish()->title()->toString();
+    }
+
+    /**
+     * Spanish validation messages for project idea forms.
+     */
+    protected function projectValidationMessages(): array
+    {
+        return [
+            'required' => 'El campo :attribute es obligatorio.',
+            'string' => 'El campo :attribute debe ser texto.',
+            'integer' => 'El campo :attribute debe ser un número entero.',
+            'email' => 'El campo :attribute debe ser un correo electrónico válido.',
+            'array' => 'El campo :attribute debe ser una lista válida.',
+            'exists' => 'El valor seleccionado en :attribute no es válido.',
+            'in' => 'El valor seleccionado en :attribute no es válido.',
+            'max' => 'El campo :attribute no debe ser mayor que :max.',
+            'min' => 'El campo :attribute debe ser al menos :min.',
+            'unique' => 'El valor ingresado en :attribute ya está registrado.',
+            'associated_professors.*.exists' => 'El profesor seleccionado no existe o está inactivo.',
+            'teammate_ids.*.exists' => 'El compañero seleccionado no es válido para este proyecto.',
+            'content_frameworks.*.required' => 'Debes seleccionar al menos un contenido del marco.',
+            'content_frameworks.*.exists' => 'El contenido del marco seleccionado no es válido.',
+        ];
+    }
+
+    /**
+     * Human-readable Spanish names for project idea form fields.
+     */
+    protected function projectValidationAttributes(): array
+    {
+        return [
+            'city_id' => 'ciudad',
+            'program_id' => 'programa académico',
+            'investigation_line_id' => 'línea de investigación',
+            'thematic_area_id' => 'área temática',
+            'title' => 'título del proyecto',
+            'evaluation_criteria' => 'criterios de evaluación',
+            'students_count' => 'cantidad de estudiantes',
+            'execution_time' => 'tiempo de ejecución',
+            'viability' => 'viabilidad',
+            'relevance' => 'pertinencia',
+            'teacher_availability' => 'disponibilidad de docentes',
+            'title_objectives_quality' => 'calidad entre título y objetivo',
+            'general_objective' => 'objetivo general',
+            'description' => 'descripción',
+            'contact_first_name' => 'nombres del contacto',
+            'contact_last_name' => 'apellidos del contacto',
+            'contact_email' => 'correo del contacto',
+            'contact_phone' => 'teléfono del contacto',
+            'associated_professors' => 'profesores asociados',
+            'associated_professors.*' => 'profesor asociado',
+            'content_frameworks' => 'contenidos del marco',
+            'content_frameworks.*' => 'contenido del marco',
+            'teammate_ids' => 'compañeros',
+            'teammate_ids.*' => 'compañero',
+            'student_first_name' => 'nombres del estudiante',
+            'student_last_name' => 'apellidos del estudiante',
+            'student_card_id' => 'documento del estudiante',
+            'student_email' => 'correo del estudiante',
+            'student_phone' => 'teléfono del estudiante',
+        ];
     }
 
     /**
@@ -2448,7 +2514,11 @@ SQL;
             'content_frameworks.*' => ['required', Rule::exists('content_frameworks', 'id')],
         ];
 
-        $validated = $request->validate($baseRules);
+        $validated = $request->validate(
+            $baseRules,
+            $this->projectValidationMessages(),
+            $this->projectValidationAttributes()
+        );
         $isUpdate = $project !== null;
         $normalizedTitle = $this->normalizeTitle($validated['title']);
 
@@ -2599,7 +2669,15 @@ SQL;
             'content_frameworks.*' => ['required', Rule::exists('content_frameworks', 'id')],
         ];
 
-        $validated = $request->validate($baseRules);
+        $validated = $request->validate($baseRules, [
+            'investigation_line_id.required' => 'Debes seleccionar una línea de investigación.',
+            'thematic_area_id.required' => 'Debes seleccionar un área temática.',
+            'title.required' => 'El título del proyecto es obligatorio.',
+            'general_objective.required' => 'El objetivo general es obligatorio.',
+            'description.required' => 'La descripción del proyecto es obligatoria.',
+            'content_frameworks.required' => 'Debes completar la selección de marcos.',
+            'content_frameworks.*.required' => 'Debes seleccionar una opción en cada marco.',
+        ]);
         $isUpdate = $project !== null;
 
         if (! empty($validated['teammate_ids'])) {
